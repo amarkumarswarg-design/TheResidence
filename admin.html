@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin — The Residence</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--ink:#0d0d0d;--paper:#f7f4ef;--gold:#b89a5a;--muted:#7a7060;--line:#e2ddd4;--white:#fff;--green:#1a6e3a;--red:#8b1a1a;}
+body{font-family:'Outfit',sans-serif;background:#111;color:#eee;min-height:100vh;}
+
+/* LOGIN */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#111;}
+.login-box{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:1rem;padding:2.5rem;width:100%;max-width:360px;text-align:center;}
+.login-logo{font-size:1.8rem;font-weight:600;color:var(--gold);margin-bottom:.3rem;}
+.login-sub{font-size:.8rem;color:#666;margin-bottom:2rem;}
+.login-box input{width:100%;background:#111;border:1px solid #333;border-radius:.5rem;padding:.85rem 1rem;color:#eee;font-family:'Outfit',sans-serif;font-size:.9rem;margin-bottom:1rem;outline:none;}
+.login-box input:focus{border-color:var(--gold);}
+.login-btn{width:100%;background:var(--gold);color:#111;border:none;padding:.9rem;border-radius:.5rem;font-size:.9rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;}
+.login-btn:hover{opacity:.9;}
+.login-err{color:#e87070;font-size:.82rem;margin-top:.75rem;display:none;}
+
+/* ADMIN LAYOUT */
+.admin{display:none;min-height:100vh;}
+.admin.active{display:block;}
+.topbar{background:#1a1a1a;border-bottom:1px solid #2a2a2a;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;}
+.topbar-title{font-size:1rem;font-weight:600;color:var(--gold);}
+.topbar-sub{font-size:.75rem;color:#666;}
+.logout-btn{background:transparent;border:1px solid #333;color:#888;padding:.4rem 1rem;border-radius:999px;cursor:pointer;font-size:.78rem;font-family:'Outfit',sans-serif;}
+.logout-btn:hover{border-color:#666;color:#eee;}
+
+/* TABS */
+.tabs{display:flex;gap:0;background:#1a1a1a;border-bottom:1px solid #2a2a2a;overflow-x:auto;}
+.tab{padding:.9rem 1.5rem;font-size:.82rem;font-weight:500;cursor:pointer;border:none;background:transparent;color:#666;white-space:nowrap;border-bottom:2px solid transparent;font-family:'Outfit',sans-serif;}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+.content{padding:1.5rem;max-width:900px;margin:0 auto;}
+
+/* SECTION TITLE */
+.sec-title{font-size:1rem;font-weight:600;color:#eee;margin-bottom:1.2rem;}
+
+/* FLAT CARD ADMIN */
+.flat-admin-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:.75rem;padding:1.5rem;margin-bottom:1.2rem;}
+.flat-admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;}
+.flat-admin-name{font-size:1.1rem;font-weight:600;color:var(--gold);}
+.avail-toggle{display:flex;align-items:center;gap:.75rem;}
+.toggle-label{font-size:.8rem;color:#888;}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:#333;border-radius:999px;transition:.3s;}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#888;border-radius:50%;transition:.3s;}
+.toggle input:checked + .toggle-slider{background:var(--green);}
+.toggle input:checked + .toggle-slider::before{transform:translateX(20px);background:#fff;}
+
+.flat-admin-fields{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+@media(max-width:480px){.flat-admin-fields{grid-template-columns:1fr;}}
+.field-group label{display:block;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:#666;margin-bottom:.35rem;}
+.field-group input,.field-group textarea,.field-group select{width:100%;background:#111;border:1px solid #333;border-radius:.5rem;padding:.7rem .9rem;color:#eee;font-family:'Outfit',sans-serif;font-size:.88rem;outline:none;}
+.field-group input:focus,.field-group textarea:focus{border-color:var(--gold);}
+.field-group textarea{min-height:70px;resize:vertical;}
+.field-group.full{grid-column:1/-1;}
+
+.save-btn{background:var(--gold);color:#111;border:none;padding:.75rem 2rem;border-radius:.5rem;font-size:.85rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;}
+.save-btn:hover{opacity:.9;}
+.save-btn:disabled{opacity:.5;cursor:not-allowed;}
+.saved-msg{font-size:.78rem;color:#4caf50;margin-left:1rem;display:none;}
+
+/* PHOTOS */
+.photos-section{margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid #2a2a2a;}
+.photos-grid{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:.75rem;}
+.photo-thumb{position:relative;width:100px;height:80px;}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;border-radius:.5rem;border:1px solid #333;}
+.photo-del{position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#c0392b;border:none;border-radius:50%;color:#fff;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.upload-area{border:2px dashed #333;border-radius:.5rem;padding:1.5rem;text-align:center;cursor:pointer;margin-top:.5rem;transition:.2s;}
+.upload-area:hover{border-color:var(--gold);}
+.upload-area input{display:none;}
+.upload-label{font-size:.82rem;color:#666;cursor:pointer;}
+.upload-progress{font-size:.78rem;color:var(--gold);margin-top:.5rem;display:none;}
+
+/* QUESTIONS */
+.q-admin-item{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:.75rem;padding:1.2rem 1.5rem;margin-bottom:1rem;}
+.q-admin-name{font-weight:600;color:#eee;font-size:.9rem;}
+.q-admin-email{font-size:.75rem;color:#666;margin-bottom:.5rem;}
+.q-admin-msg{font-size:.88rem;color:#bbb;line-height:1.7;margin-bottom:.75rem;}
+.q-admin-time{font-size:.7rem;color:#555;margin-bottom:.75rem;}
+.q-current-reply{background:#1f2a1f;border-left:3px solid var(--green);padding:.75rem 1rem;border-radius:0 .4rem .4rem 0;font-size:.84rem;color:#7ecf7e;margin-bottom:.75rem;}
+.q-reply-area{width:100%;background:#111;border:1px solid #333;border-radius:.5rem;padding:.7rem .9rem;color:#eee;font-family:'Outfit',sans-serif;font-size:.85rem;outline:none;min-height:80px;resize:vertical;margin-bottom:.6rem;}
+.q-reply-area:focus{border-color:var(--gold);}
+.reply-btn{background:var(--green);color:#fff;border:none;padding:.6rem 1.5rem;border-radius:.4rem;font-size:.82rem;cursor:pointer;font-family:'Outfit',sans-serif;}
+.reply-btn:hover{opacity:.85;}
+.delete-q-btn{background:transparent;border:1px solid #c0392b33;color:#c0392b;padding:.6rem 1rem;border-radius:.4rem;font-size:.78rem;cursor:pointer;margin-left:.5rem;font-family:'Outfit',sans-serif;}
+.delete-q-btn:hover{background:#c0392b22;}
+.no-items{color:#555;font-size:.88rem;text-align:center;padding:2.5rem;}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#222;color:#eee;padding:.75rem 1.5rem;border-radius:999px;font-size:.82rem;border:1px solid #333;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">The Residence</div>
+    <div class="login-sub">Admin Panel</div>
+    <input type="text" id="loginUser" placeholder="Username" autocomplete="off"/>
+    <input type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">Login</button>
+    <div class="login-err" id="loginErr">Wrong username or password.</div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin" id="adminPanel">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">The Residence — Admin</div>
+      <div class="topbar-sub">Manage your property</div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('flats')">🏠 Flats</button>
+    <button class="tab" onclick="showTab('questions')">💬 Questions</button>
+  </div>
+
+  <div class="content">
+
+    <!-- FLATS TAB -->
+    <div id="tabFlats">
+      <div class="sec-title">Manage Flats</div>
+      <div id="flatsAdmin"><div class="no-items">Loading...</div></div>
+    </div>
+
+    <!-- QUESTIONS TAB -->
+    <div id="tabQuestions" style="display:none;">
+      <div class="sec-title">Visitor Questions</div>
+      <div id="questionsAdmin"><div class="no-items">Loading...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://spadxbjghduuqntsimic.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwYWR4YmpnaGR1dXFudHNpbWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDMzNDksImV4cCI6MjA5MzkxOTM0OX0.LE9yJGEPIERR6ZW_nRfXsvUW0nIuQCezCBSzesOex-c';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Credentials stored locally — not in GitHub
+const ADMIN_USER = 'TheResidence';
+const ADMIN_PASS = 'AmarSwarg2010';
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value;
+  const p = document.getElementById('loginPass').value;
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    sessionStorage.setItem('tr_auth', '1');
+    showAdmin();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('tr_auth');
+  document.getElementById('adminPanel').classList.remove('active');
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+function showAdmin() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminPanel').classList.add('active');
+  loadAdminFlats();
+  loadAdminQuestions();
+}
+
+// Check session
+if (sessionStorage.getItem('tr_auth') === '1') showAdmin();
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tabFlats').style.display = tab === 'flats' ? 'block' : 'none';
+  document.getElementById('tabQuestions').style.display = tab === 'questions' ? 'block' : 'none';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ── FLATS ── */
+let allPhotos = {};
+
+async function loadAdminFlats() {
+  const { data: flats } = await sb.from('flats').select('*').order('id');
+  const { data: photos } = await sb.from('photos').select('*');
+
+  allPhotos = {};
+  (photos || []).forEach(p => {
+    if (!allPhotos[p.flat_id]) allPhotos[p.flat_id] = [];
+    allPhotos[p.flat_id].push(p);
+  });
+
+  if (!flats) return;
+  document.getElementById('flatsAdmin').innerHTML = flats.map(f => renderFlatAdmin(f)).join('');
+}
+
+function renderFlatAdmin(f) {
+  const photos = allPhotos[f.id] || [];
+  return `
+  <div class="flat-admin-card" id="card-${f.id}">
+    <div class="flat-admin-header">
+      <div class="flat-admin-name">${f.name} — ${f.floor}</div>
+      <div class="avail-toggle">
+        <span class="toggle-label">${f.available ? 'Available' : 'Not Available'}</span>
+        <label class="toggle">
+          <input type="checkbox" ${f.available ? 'checked' : ''} onchange="toggleAvail('${f.id}', this.checked)"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flat-admin-fields">
+      <div class="field-group">
+        <label>Monthly Rent (₹)</label>
+        <input type="number" id="${f.id}-price" value="${f.price}"/>
+      </div>
+      <div class="field-group">
+        <label>Security Deposit (₹)</label>
+        <input type="number" id="${f.id}-deposit" value="${f.deposit}"/>
+      </div>
+      <div class="field-group">
+        <label>Floor</label>
+        <input type="text" id="${f.id}-floor" value="${f.floor}"/>
+      </div>
+      <div class="field-group">
+        <label>Facing</label>
+        <input type="text" id="${f.id}-facing" value="${f.facing}"/>
+      </div>
+      <div class="field-group">
+        <label>Rooms Description</label>
+        <input type="text" id="${f.id}-rooms" value="${f.rooms}"/>
+      </div>
+      <div class="field-group">
+        <label>Furnishing</label>
+        <input type="text" id="${f.id}-furnishing" value="${f.furnishing}"/>
+      </div>
+      <div class="field-group full">
+        <label>Extra Notes (optional)</label>
+        <textarea id="${f.id}-notes">${f.extra_notes || ''}</textarea>
+      </div>
+    </div>
+
+    <button class="save-btn" onclick="saveFlat('${f.id}', this)">Save Changes</button>
+    <span class="saved-msg" id="saved-${f.id}">✓ Saved!</span>
+
+    <div class="photos-section">
+      <div style="font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:#555;margin-bottom:.5rem;">Photos</div>
+      <div class="photos-grid" id="photos-${f.id}">
+        ${photos.map(p => `
+          <div class="photo-thumb" id="pthumb-${p.id}">
+            <img src="${p.url}" alt="photo"/>
+            <button class="photo-del" onclick="deletePhoto('${p.id}','${f.id}')">✕</button>
+          </div>
+        `).join('')}
+      </div>
+      <div class="upload-area" onclick="document.getElementById('upload-${f.id}').click()">
+        <label class="upload-label">📷 Click to upload photo</label>
+        <input type="file" id="upload-${f.id}" accept="image/*" onchange="uploadPhoto('${f.id}', this)"/>
+        <div class="upload-progress" id="uprog-${f.id}">Uploading...</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function saveFlat(id, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  const { error } = await sb.from('flats').update({
+    price: parseInt(document.getElementById(id+'-price').value),
+    deposit: parseInt(document.getElementById(id+'-deposit').value),
+    floor: document.getElementById(id+'-floor').value,
+    facing: document.getElementById(id+'-facing').value,
+    rooms: document.getElementById(id+'-rooms').value,
+    furnishing: document.getElementById(id+'-furnishing').value,
+    extra_notes: document.getElementById(id+'-notes').value,
+  }).eq('id', id);
+  btn.disabled = false;
+  btn.textContent = 'Save Changes';
+  if (!error) {
+    const s = document.getElementById('saved-'+id);
+    s.style.display = 'inline';
+    setTimeout(() => s.style.display = 'none', 2000);
+    toast('Changes saved!');
+  } else toast('Error saving. Try again.');
+}
+
+async function toggleAvail(id, val) {
+  await sb.from('flats').update({ available: val }).eq('id', id);
+  toast(val ? 'Marked as Available' : 'Marked as Not Available');
+}
+
+async function uploadPhoto(flatId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const prog = document.getElementById('uprog-'+flatId);
+  prog.style.display = 'block';
+
+  const ext = file.name.split('.').pop();
+  const path = `${flatId}/${Date.now()}.${ext}`;
+  const { error: upErr } = await sb.storage.from('flat-photos').upload(path, file);
+  if (upErr) { prog.style.display='none'; toast('Upload failed.'); return; }
+
+  const { data: urlData } = sb.storage.from('flat-photos').getPublicUrl(path);
+  const url = urlData.publicUrl;
+
+  const { data: photo } = await sb.from('photos').insert({ flat_id: flatId, url }).select().single();
+  prog.style.display = 'none';
+  input.value = '';
+
+  if (photo) {
+    const grid = document.getElementById('photos-'+flatId);
+    const div = document.createElement('div');
+    div.className = 'photo-thumb';
+    div.id = 'pthumb-'+photo.id;
+    div.innerHTML = `<img src="${url}" alt="photo"/><button class="photo-del" onclick="deletePhoto('${photo.id}','${flatId}')">✕</button>`;
+    grid.appendChild(div);
+    toast('Photo uploaded!');
+  }
+}
+
+async function deletePhoto(photoId, flatId) {
+  if (!confirm('Delete this photo?')) return;
+  const { data: photo } = await sb.from('photos').select('url').eq('id', photoId).single();
+  if (photo) {
+    const path = photo.url.split('/flat-photos/')[1];
+    await sb.storage.from('flat-photos').remove([path]);
+  }
+  await sb.from('photos').delete().eq('id', photoId);
+  const el = document.getElementById('pthumb-'+photoId);
+  if (el) el.remove();
+  toast('Photo deleted.');
+}
+
+/* ── QUESTIONS ── */
+async function loadAdminQuestions() {
+  const { data } = await sb.from('questions').select('*').order('created_at', { ascending: false });
+  const el = document.getElementById('questionsAdmin');
+  if (!data || !data.length) { el.innerHTML = '<div class="no-items">No questions yet.</div>'; return; }
+  el.innerHTML = data.map(q => `
+    <div class="q-admin-item" id="qadm-${q.id}">
+      <div class="q-admin-name">${escHtml(q.visitor_name)}</div>
+      <div class="q-admin-email">${q.visitor_email ? '📧 '+escHtml(q.visitor_email) : 'No email provided'}</div>
+      <div class="q-admin-time">${new Date(q.created_at).toLocaleString('en-IN')}</div>
+      <div class="q-admin-msg">"${escHtml(q.message)}"</div>
+      ${q.replied && q.reply ? `<div class="q-current-reply">✓ Your reply: ${escHtml(q.reply)}</div>` : ''}
+      <textarea class="q-reply-area" id="reply-${q.id}" placeholder="Type your reply...">${q.reply || ''}</textarea>
+      <button class="reply-btn" onclick="sendReply('${q.id}')">
+        ${q.replied ? 'Update Reply' : 'Post Reply'}
+      </button>
+      <button class="delete-q-btn" onclick="deleteQuestion('${q.id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function sendReply(id) {
+  const reply = document.getElementById('reply-'+id).value.trim();
+  if (!reply) { toast('Please write a reply first.'); return; }
+  const { error } = await sb.from('questions').update({ reply, replied: true }).eq('id', id);
+  if (!error) { toast('Reply posted!'); loadAdminQuestions(); }
+  else toast('Error. Try again.');
+}
+
+async function deleteQuestion(id) {
+  if (!confirm('Delete this question?')) return;
+  await sb.from('questions').delete().eq('id', id);
+  document.getElementById('qadm-'+id)?.remove();
+  toast('Question deleted.');
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
