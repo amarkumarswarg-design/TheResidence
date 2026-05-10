@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>The Residence — Arrah</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0d0d0d;--paper:#f7f4ef;--gold:#b89a5a;--gold2:#d4b87a;
+  --muted:#7a7060;--line:#e2ddd4;--white:#ffffff;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Outfit',sans-serif;background:var(--paper);color:var(--ink);overflow-x:hidden;}
+
+/* LANG TOGGLE */
+.lang-bar{position:fixed;top:1.2rem;right:1.4rem;z-index:999;display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--white);box-shadow:0 2px 12px rgba(0,0,0,.08);}
+.lang-btn{padding:.35rem .9rem;font-size:.75rem;font-weight:500;letter-spacing:.06em;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:.2s;font-family:'Outfit',sans-serif;}
+.lang-btn.active{background:var(--ink);color:var(--white);}
+
+/* HERO */
+.hero{min-height:100vh;background:var(--ink);display:grid;place-items:center;text-align:center;padding:2rem;position:relative;overflow:hidden;}
+.hero-glow{position:absolute;width:600px;height:600px;background:radial-gradient(circle,#b89a5a18 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulse 6s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.15);}}
+.hero-content{position:relative;z-index:1;}
+.hero-eyebrow{font-size:.7rem;letter-spacing:.35em;text-transform:uppercase;color:var(--gold);margin-bottom:1.8rem;opacity:0;animation:up .9s ease .2s forwards;}
+.hero h1{font-family:'Cormorant Garamond',serif;font-size:clamp(3.5rem,10vw,8rem);font-weight:300;color:var(--white);line-height:1;letter-spacing:-.02em;margin-bottom:.5rem;opacity:0;animation:up .9s ease .4s forwards;}
+.hero h1 em{font-style:italic;color:var(--gold2);}
+.hero-sub{font-size:clamp(.85rem,2vw,1.05rem);font-weight:300;color:#8a8070;max-width:420px;line-height:1.8;margin:.8rem auto 2.8rem;opacity:0;animation:up .9s ease .6s forwards;}
+.hero-cta{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;opacity:0;animation:up .9s ease .8s forwards;}
+.btn-primary{background:var(--gold);color:var(--ink);font-weight:600;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;padding:.85rem 2.2rem;border-radius:999px;border:none;cursor:pointer;text-decoration:none;transition:transform .2s,box-shadow .2s;font-family:'Outfit',sans-serif;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px #b89a5a44;}
+.btn-ghost{background:transparent;color:var(--white);font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;padding:.85rem 2.2rem;border-radius:999px;border:1px solid #ffffff25;cursor:pointer;text-decoration:none;transition:.2s;font-family:'Outfit',sans-serif;}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold);}
+.scroll-down{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:#3a3530;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:.5rem;animation:fadeIn 1s ease 1.5s both;}
+.scroll-down span{width:1px;height:40px;background:linear-gradient(to bottom,var(--gold),transparent);animation:drip 2s ease-in-out infinite;}
+
+/* SECTION */
+.section{padding:6rem 1.5rem;}
+.label{font-size:.68rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem;}
+.heading{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,5vw,3.2rem);font-weight:400;line-height:1.15;}
+.subtext{color:var(--muted);font-size:.95rem;line-height:1.8;max-width:520px;}
+
+/* FLATS */
+.flats-section{background:var(--white);}
+.flats-head{text-align:center;margin-bottom:4rem;}
+.flats-head .subtext{margin:1rem auto 0;}
+.flats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;max-width:1000px;margin:0 auto;}
+
+.flat-card{border:1px solid var(--line);border-radius:1rem;overflow:hidden;background:var(--paper);cursor:pointer;transition:transform .3s,box-shadow .3s,border-color .3s;text-decoration:none;color:inherit;display:block;}
+.flat-card:hover{transform:translateY(-8px);box-shadow:0 24px 60px rgba(0,0,0,.1);border-color:var(--gold);}
+
+.card-visual{height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;position:relative;overflow:hidden;}
+.card-visual.ground-a{background:linear-gradient(135deg,#1a1208 0%,#3d2a0a 100%);}
+.card-visual.ground-b{background:linear-gradient(135deg,#0d1a12 0%,#0a3d2a 100%);}
+.card-visual.second{background:linear-gradient(135deg,#0d0d1a 0%,#1a0a3d 100%);}
+.card-visual img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.card-visual-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6),transparent);}
+.card-floor-icon{font-size:3rem;position:relative;z-index:1;}
+.card-floor-label{font-size:.65rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.5);position:relative;z-index:1;}
+.avail-badge{position:absolute;top:1rem;left:1rem;font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.28rem .75rem;border-radius:999px;z-index:2;}
+.avail-badge.yes{background:#1a6e3a;color:#fff;}
+.avail-badge.no{background:#8b1a1a;color:#fff;}
+
+.card-body{padding:1.6rem;}
+.card-name{font-family:'Cormorant Garamond',serif;font-size:1.4rem;font-weight:600;margin-bottom:.15rem;}
+.card-floor-tag{font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:1.2rem;}
+.card-price{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--gold);line-height:1;}
+.card-price-mo{font-size:.78rem;color:var(--muted);font-family:'Outfit',sans-serif;font-weight:400;margin-left:.2rem;}
+.card-teaser{margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--line);display:flex;gap:.5rem;flex-wrap:wrap;}
+.teaser-tag{font-size:.7rem;background:var(--white);border:1px solid var(--line);color:var(--muted);padding:.22rem .6rem;border-radius:999px;}
+.card-cta{margin-top:1.4rem;width:100%;background:var(--ink);color:var(--white);border:none;padding:.78rem;border-radius:.6rem;font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:.2s;font-family:'Outfit',sans-serif;display:flex;align-items:center;justify-content:center;gap:.5rem;}
+.card-cta:hover{background:var(--gold);color:var(--ink);}
+
+/* FLAT DETAIL PAGE */
+.flat-detail{display:none;min-height:100vh;background:var(--paper);}
+.flat-detail.active{display:block;}
+.detail-hero{height:60vh;min-height:320px;position:relative;overflow:hidden;display:flex;align-items:flex-end;}
+.detail-hero-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8rem;}
+.detail-hero-bg.ground-a{background:linear-gradient(135deg,#1a1208,#3d2a0a);}
+.detail-hero-bg.ground-b{background:linear-gradient(135deg,#0d1a12,#0a3d2a);}
+.detail-hero-bg.second{background:linear-gradient(135deg,#0d0d1a,#1a0a3d);}
+.detail-hero-bg img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.detail-hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.8) 0%,transparent 60%);}
+.detail-hero-info{position:relative;z-index:1;padding:2rem;color:white;}
+.detail-back{position:absolute;top:1.5rem;left:1.5rem;z-index:10;background:rgba(0,0,0,.4);color:white;border:1px solid rgba(255,255,255,.2);padding:.5rem 1.2rem;border-radius:999px;cursor:pointer;font-size:.82rem;font-family:'Outfit',sans-serif;backdrop-filter:blur(8px);}
+.detail-back:hover{background:rgba(0,0,0,.6);}
+.detail-body{max-width:800px;margin:0 auto;padding:3rem 1.5rem;}
+.detail-name{font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:600;}
+.detail-floor{font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:2rem;}
+.detail-price-box{background:var(--white);border:1px solid var(--line);border-radius:1rem;padding:1.5rem 2rem;display:flex;gap:3rem;margin-bottom:2rem;flex-wrap:wrap;}
+.detail-price{font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:700;color:var(--gold);}
+.detail-price-label{font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.2rem;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;}
+@media(max-width:480px){.detail-grid{grid-template-columns:1fr;}}
+.detail-item{background:var(--white);border:1px solid var(--line);border-radius:.75rem;padding:1rem 1.2rem;}
+.detail-item-label{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;}
+.detail-item-val{font-size:.95rem;font-weight:500;}
+.detail-rules{background:#fff8f0;border:1px solid #f0e0c8;border-radius:.75rem;padding:1.2rem 1.5rem;margin-bottom:2rem;}
+.detail-rules li{font-size:.88rem;color:#6a5030;line-height:2.2;list-style:none;padding-left:1.4rem;position:relative;}
+.detail-rules li::before{content:'–';position:absolute;left:0;color:var(--gold);}
+.detail-photos{margin-bottom:2rem;}
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-top:1rem;}
+.photo-img{width:100%;height:160px;object-fit:cover;border-radius:.75rem;border:1px solid var(--line);}
+.no-photos{color:var(--muted);font-size:.88rem;font-style:italic;}
+
+/* SECTION TITLE INSIDE DETAIL */
+.detail-section-title{font-size:.68rem;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;margin-top:2rem;}
+
+/* PHOTO SLIDER */
+.slider{position:relative;margin-bottom:2rem;}
+.slider-track{display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:.5rem;}
+.slider-track::-webkit-scrollbar{display:none;}
+.slider-img{flex:0 0 280px;height:200px;object-fit:cover;border-radius:.75rem;scroll-snap-align:start;border:1px solid var(--line);}
+
+/* QUESTIONS */
+.questions-section{background:var(--white);}
+.questions-inner{max-width:700px;margin:0 auto;}
+.questions-inner .subtext{margin-bottom:2.5rem;}
+
+.q-form{background:var(--paper);border:1px solid var(--line);border-radius:1rem;padding:2rem;margin-bottom:3rem;}
+.q-form input,.q-form textarea{width:100%;background:var(--white);border:1px solid var(--line);border-radius:.6rem;padding:.85rem 1rem;font-family:'Outfit',sans-serif;font-size:.9rem;color:var(--ink);margin-bottom:1rem;outline:none;transition:border-color .2s;}
+.q-form input:focus,.q-form textarea:focus{border-color:var(--gold);}
+.q-form textarea{min-height:100px;resize:vertical;}
+.q-form .row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:480px){.q-form .row{grid-template-columns:1fr;}}
+.q-submit{width:100%;background:var(--ink);color:var(--white);border:none;padding:.9rem;border-radius:.6rem;font-size:.9rem;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;transition:.2s;}
+.q-submit:hover{background:var(--gold);color:var(--ink);}
+.q-success{display:none;text-align:center;color:#1a6e3a;font-size:.9rem;padding:1rem;background:#e8f5ee;border-radius:.6rem;margin-top:1rem;}
+
+.q-list{display:flex;flex-direction:column;gap:1.2rem;}
+.q-item{background:var(--paper);border:1px solid var(--line);border-radius:.75rem;padding:1.2rem 1.5rem;}
+.q-item-name{font-weight:600;font-size:.9rem;margin-bottom:.2rem;}
+.q-item-msg{font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:.5rem;}
+.q-item-reply{background:#fff8f0;border-left:3px solid var(--gold);padding:.75rem 1rem;border-radius:0 .5rem .5rem 0;font-size:.85rem;color:#6a5030;margin-top:.75rem;}
+.q-item-reply-label{font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem;}
+.q-item-time{font-size:.7rem;color:#bbb;margin-top:.5rem;}
+.no-questions{color:var(--muted);font-size:.88rem;font-style:italic;text-align:center;padding:2rem;}
+
+/* LOCATION */
+.location-section{background:var(--paper);}
+.location-inner{max-width:900px;margin:0 auto;}
+.map-wrap{margin-top:2.5rem;border-radius:1rem;overflow:hidden;border:1px solid var(--line);box-shadow:0 8px 40px rgba(0,0,0,.07);height:360px;}
+.map-wrap iframe{width:100%;height:100%;border:none;}
+.loc-chips{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.5rem;}
+.loc-chip{display:flex;align-items:center;gap:.4rem;background:var(--white);border:1px solid var(--line);padding:.45rem 1rem;border-radius:999px;font-size:.8rem;color:var(--muted);}
+
+/* CONTACT */
+.contact-section{background:var(--ink);text-align:center;}
+.contact-section .heading{color:var(--white);}
+.contact-section .subtext{color:#7a7060;margin:.8rem auto 2.5rem;}
+.email-big{display:inline-flex;align-items:center;gap:.75rem;background:var(--gold);color:var(--ink);text-decoration:none;padding:1.1rem 2.8rem;border-radius:999px;font-size:1rem;font-weight:600;transition:transform .2s,box-shadow .2s;font-family:'Outfit',sans-serif;}
+.email-big:hover{transform:translateY(-3px);box-shadow:0 14px 40px #b89a5a44;}
+.email-note{color:#3a3530;font-size:.78rem;margin-top:1rem;}
+
+footer{background:#080808;padding:1.8rem;text-align:center;font-size:.75rem;color:#3a3530;letter-spacing:.05em;}
+footer strong{color:var(--gold);}
+
+/* MAIN PAGE vs DETAIL PAGE */
+.main-page{display:block;}
+.main-page.hidden{display:none;}
+
+/* LOADING */
+.loading{text-align:center;color:var(--muted);padding:3rem;font-size:.9rem;}
+
+@keyframes up{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes drip{0%,100%{transform:scaleY(1);}50%{transform:scaleY(.6);}}
+</style>
+</head>
+<body>
+
+<div class="lang-bar">
+  <button class="lang-btn active" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('hi')">HI</button>
+</div>
+
+<!-- MAIN PAGE -->
+<div class="main-page" id="mainPage">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+      <p class="hero-eyebrow" data-en="Premium Residential Rentals — Arrah" data-hi="प्रीमियम आवासीय किराया — आरा">Premium Residential Rentals — Arrah</p>
+      <h1>The <em>Residence</em></h1>
+      <p class="hero-sub" data-en="Three thoughtfully maintained flats for families who value comfort, space, and peace of mind." data-hi="उन परिवारों के लिए तीन सुव्यवस्थित फ्लैट जो आराम और शांति को महत्व देते हैं।">Three thoughtfully maintained flats for families who value comfort, space, and peace of mind.</p>
+      <div class="hero-cta">
+        <a href="#flats" class="btn-primary" data-en="View Available Flats" data-hi="उपलब्ध फ्लैट देखें">View Available Flats</a>
+        <a href="#questions" class="btn-ghost" data-en="Ask a Question" data-hi="सवाल पूछें">Ask a Question</a>
+      </div>
+    </div>
+    <div class="scroll-down"><span></span></div>
+  </section>
+
+  <!-- FLATS -->
+  <section class="section flats-section" id="flats">
+    <div class="flats-head">
+      <p class="label" data-en="Available Now" data-hi="अभी उपलब्ध">Available Now</p>
+      <h2 class="heading" data-en="Choose Your Home" data-hi="अपना घर चुनें">Choose Your Home</h2>
+      <p class="subtext" data-en="Three flats, directly from the owner. No broker, no hidden charges." data-hi="तीन फ्लैट, सीधे मालिक से। कोई दलाल नहीं, कोई छुपा हुआ शुल्क नहीं।">Three flats, directly from the owner. No broker, no hidden charges.</p>
+    </div>
+    <div class="flats-grid" id="flatsGrid">
+      <div class="loading">Loading flats...</div>
+    </div>
+  </section>
+
+  <!-- QUESTIONS -->
+  <section class="section questions-section" id="questions">
+    <div class="questions-inner">
+      <p class="label" data-en="Community Q&A" data-hi="सवाल-जवाब">Community Q&A</p>
+      <h2 class="heading" data-en="Have a Question?" data-hi="कोई सवाल है?">Have a Question?</h2>
+      <p class="subtext" data-en="Ask anything about the flats — the owner replies directly here." data-hi="फ्लैट के बारे में कुछ भी पूछें — मालिक यहीं जवाब देंगे।">Ask anything about the flats — the owner replies directly here.</p>
+
+      <div class="q-form">
+        <div class="row">
+          <input type="text" id="qName" placeholder="Your Name *" />
+          <input type="email" id="qEmail" placeholder="Email (optional)" />
+        </div>
+        <textarea id="qMsg" placeholder="Your question..."></textarea>
+        <button class="q-submit" onclick="submitQuestion()">
+          <span data-en="Post Question" data-hi="सवाल पोस्ट करें">Post Question</span>
+        </button>
+        <div class="q-success" id="qSuccess">✓ Question posted! The owner will reply soon.</div>
+      </div>
+
+      <div class="q-list" id="qList">
+        <div class="loading">Loading questions...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOCATION -->
+  <section class="section location-section" id="location">
+    <div class="location-inner">
+      <p class="label" data-en="Location" data-hi="स्थान">Location</p>
+      <h2 class="heading" data-en="Babu Bazar, Arrah" data-hi="बाबू बाजार, आरा">Babu Bazar, Arrah</h2>
+      <p class="subtext" data-en="Centrally located — near Zudio Mall, opposite Sahabad Pathology." data-hi="केंद्र में स्थित — ज़ूडियो मॉल के पास, साहाबाद पैथोलॉजी के सामने।">Centrally located — near Zudio Mall, opposite Sahabad Pathology.</p>
+      <div class="map-wrap">
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14431.2!2d84.6635!3d25.5547!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x398d4b00000000%3A0x0!2sBabu+Bazar%2C+Arrah%2C+Bihar+802301!5e0!3m2!1sen!2sin!4v1" allowfullscreen loading="lazy"></iframe>
+      </div>
+      <div class="loc-chips">
+        <div class="loc-chip">🛍️ <span data-en="Near Zudio Mall" data-hi="ज़ूडियो मॉल के पास">Near Zudio Mall</span></div>
+        <div class="loc-chip">🏥 <span data-en="Opp. Sahabad Pathology" data-hi="साहाबाद पैथोलॉजी के सामने">Opp. Sahabad Pathology</span></div>
+        <div class="loc-chip">🏪 <span data-en="Babu Bazar Market" data-hi="बाबू बाजार मार्केट">Babu Bazar Market</span></div>
+        <div class="loc-chip">🚌 <span data-en="Well Connected" data-hi="अच्छी कनेक्टिविटी">Well Connected</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="section contact-section" id="contact">
+    <p class="label" data-en="Get in Touch" data-hi="संपर्क करें">Get in Touch</p>
+    <h2 class="heading" data-en="Interested? Write to Us." data-hi="रुचि है? हमें लिखें।">Interested? Write to Us.</h2>
+    <p class="subtext" data-en="No brokers. Direct conversation with the owner. We respond promptly." data-hi="कोई दलाल नहीं। मालिक से सीधी बात। हम जल्दी जवाब देते हैं।">No brokers. Direct conversation with the owner. We respond promptly.</p>
+    <a class="email-big" href="https://mail.google.com/mail/?view=cm&to=amar@hiamar.online&su=Flat%20Enquiry%20-%20The%20Residence" target="_blank">
+      ✉ <span data-en="Open Gmail & Write to Us" data-hi="Gmail खोलें और लिखें">Open Gmail & Write to Us</span>
+    </a>
+    <p class="email-note">amar@hiamar.online</p>
+  </section>
+
+  <footer>
+    <strong>The Residence</strong> &nbsp;·&nbsp; Babu Bazar, Arrah, Bihar &nbsp;·&nbsp;
+    <span data-en="Direct from Owner" data-hi="सीधे मालिक से">Direct from Owner</span>
+  </footer>
+
+</div><!-- end main-page -->
+
+<!-- FLAT DETAIL PAGE -->
+<div class="flat-detail" id="detailPage">
+  <button class="detail-back" onclick="goBack()">← Back</button>
+  <div class="detail-hero">
+    <div class="detail-hero-bg" id="detailHeroBg"></div>
+    <div class="detail-hero-overlay"></div>
+    <div class="detail-hero-info">
+      <div id="detailAvailBadge" style="display:inline-block;font-size:.7rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:.3rem .9rem;border-radius:999px;margin-bottom:.75rem;"></div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;" id="detailHeroName"></div>
+      <div style="font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;opacity:.6;margin-top:.2rem;" id="detailHeroFloor"></div>
+    </div>
+  </div>
+
+  <div class="detail-body">
+    <div class="detail-section-title" data-en="PRICING" data-hi="किराया">PRICING</div>
+    <div class="detail-price-box">
+      <div>
+        <div class="detail-price-label" data-en="Monthly Rent" data-hi="मासिक किराया">Monthly Rent</div>
+        <div class="detail-price" id="detailPrice"></div>
+      </div>
+      <div>
+        <div class="detail-price-label" data-en="Security Deposit" data-hi="डिपॉजिट">Security Deposit</div>
+        <div class="detail-price" id="detailDeposit" style="font-size:1.6rem;"></div>
+      </div>
+    </div>
+
+    <div class="detail-section-title" data-en="FLAT DETAILS" data-hi="फ्लैट की जानकारी">FLAT DETAILS</div>
+    <div class="detail-grid" id="detailGrid"></div>
+
+    <div class="detail-section-title" data-en="PHOTOS" data-hi="फोटो">PHOTOS</div>
+    <div id="detailPhotos"></div>
+
+    <div class="detail-section-title" data-en="RULES & CONDITIONS" data-hi="नियम">RULES & CONDITIONS</div>
+    <ul class="detail-rules">
+      <li data-en="Family only — No bachelors" data-hi="केवल परिवार — बैचलर नहीं">Family only — No bachelors</li>
+      <li data-en="No pets allowed" data-hi="पालतू जानवर नहीं">No pets allowed</li>
+      <li data-en="No broker — direct from owner" data-hi="कोई दलाल नहीं">No broker — direct from owner</li>
+      <li data-en="Rent payable by 5th of each month" data-hi="किराया हर महीने 5 तारीख तक">Rent payable by 5th of each month</li>
+    </ul>
+
+    <a class="email-big" id="detailEmailBtn" href="#" target="_blank" style="width:100%;justify-content:center;margin-top:1rem;">
+      ✉ <span data-en="Enquire about this Flat" data-hi="इस फ्लैट के बारे में पूछें">Enquire about this Flat</span>
+    </a>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://spadxbjghduuqntsimic.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwYWR4YmpnaGR1dXFudHNpbWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDMzNDksImV4cCI6MjA5MzkxOTM0OX0.LE9yJGEPIERR6ZW_nRfXsvUW0nIuQCezCBSzesOex-c';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentLang = 'en';
+let allFlats = [];
+
+const VISUAL_CLASSES = {'flat-a':'ground-a','flat-b':'ground-b','flat-c':'second'};
+const ICONS = {'flat-a':'🏠','flat-b':'🏠','flat-c':'🏢'};
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+  document.querySelectorAll('[data-en]').forEach(el => {
+    el.textContent = el.getAttribute('data-' + lang) || el.getAttribute('data-en');
+  });
+}
+
+async function loadFlats() {
+  const { data, error } = await sb.from('flats').select('*').order('id');
+  if (error || !data) { document.getElementById('flatsGrid').innerHTML = '<div class="loading">Could not load flats.</div>'; return; }
+  allFlats = data;
+  renderFlats(data);
+}
+
+function renderFlats(flats) {
+  const grid = document.getElementById('flatsGrid');
+  if (!flats.length) { grid.innerHTML = '<div class="loading">No flats available.</div>'; return; }
+  grid.innerHTML = flats.map(f => `
+    <div class="flat-card" onclick="openDetail('${f.id}')">
+      <div class="card-visual ${VISUAL_CLASSES[f.id] || 'ground-a'}">
+        <div class="avail-badge ${f.available ? 'yes' : 'no'}">${f.available ? '✓ Available' : '✗ Not Available'}</div>
+        <div class="card-floor-icon">${ICONS[f.id] || '🏠'}</div>
+        <div class="card-floor-label">${f.floor}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${f.name}</div>
+        <div class="card-floor-tag">${f.floor} · ${f.facing} Facing</div>
+        <div class="card-price">₹${f.price.toLocaleString()}<span class="card-price-mo">/month</span></div>
+        <div class="card-teaser">
+          <span class="teaser-tag">2 Rooms</span>
+          <span class="teaser-tag">Kitchen</span>
+          <span class="teaser-tag">Bathroom</span>
+        </div>
+        <button class="card-cta">View Full Details →</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function openDetail(flatId) {
+  const flat = allFlats.find(f => f.id === flatId);
+  if (!flat) return;
+
+  document.getElementById('mainPage').classList.add('hidden');
+  document.getElementById('detailPage').classList.add('active');
+  window.scrollTo(0, 0);
+
+  const bg = document.getElementById('detailHeroBg');
+  bg.className = 'detail-hero-bg ' + (VISUAL_CLASSES[flatId] || 'ground-a');
+  bg.innerHTML = ICONS[flatId] || '🏠';
+
+  const badge = document.getElementById('detailAvailBadge');
+  badge.textContent = flat.available ? '✓ Available' : '✗ Not Available';
+  badge.style.background = flat.available ? '#1a6e3a' : '#8b1a1a';
+  badge.style.color = '#fff';
+
+  document.getElementById('detailHeroName').textContent = flat.name;
+  document.getElementById('detailHeroFloor').textContent = flat.floor + ' · ' + flat.facing + ' Facing';
+  document.getElementById('detailPrice').textContent = '₹' + flat.price.toLocaleString();
+  document.getElementById('detailDeposit').textContent = '₹' + flat.deposit.toLocaleString();
+
+  document.getElementById('detailGrid').innerHTML = [
+    ['Type', flat.rooms],
+    ['Floor', flat.floor],
+    ['Facing', flat.facing + ' Facing'],
+    ['Furnishing', flat.furnishing],
+    ['Deposit', '₹' + flat.deposit.toLocaleString() + ' (Refundable)'],
+    ['Availability', flat.available ? 'Immediate' : 'Not Available'],
+  ].map(([k,v]) => `
+    <div class="detail-item">
+      <div class="detail-item-label">${k}</div>
+      <div class="detail-item-val">${v}</div>
+    </div>
+  `).join('');
+
+  if (flat.extra_notes) {
+    document.getElementById('detailGrid').innerHTML += `
+      <div class="detail-item" style="grid-column:1/-1;">
+        <div class="detail-item-label">Additional Notes</div>
+        <div class="detail-item-val">${flat.extra_notes}</div>
+      </div>`;
+  }
+
+  document.getElementById('detailEmailBtn').href =
+    `https://mail.google.com/mail/?view=cm&to=amar@hiamar.online&su=${encodeURIComponent(flat.name + ' Enquiry - The Residence')}`;
+
+  // Load photos
+  const { data: photos } = await sb.from('photos').select('*').eq('flat_id', flatId).order('created_at');
+  const photoDiv = document.getElementById('detailPhotos');
+  if (photos && photos.length) {
+    photoDiv.innerHTML = `<div class="slider"><div class="slider-track">${photos.map(p => `<img class="slider-img" src="${p.url}" alt="Flat photo"/>`).join('')}</div></div>`;
+  } else {
+    photoDiv.innerHTML = '<p class="no-photos">Photos coming soon.</p>';
+  }
+
+  // Re-apply lang
+  setLang(currentLang);
+}
+
+function goBack() {
+  document.getElementById('mainPage').classList.remove('hidden');
+  document.getElementById('detailPage').classList.remove('active');
+  window.scrollTo(0, 0);
+}
+
+async function loadQuestions() {
+  const { data, error } = await sb.from('questions').select('*').order('created_at', { ascending: false });
+  const list = document.getElementById('qList');
+  if (error || !data || !data.length) {
+    list.innerHTML = '<div class="no-questions">No questions yet. Be the first to ask!</div>';
+    return;
+  }
+  list.innerHTML = data.map(q => `
+    <div class="q-item">
+      <div class="q-item-name">${escHtml(q.visitor_name)}</div>
+      <div class="q-item-msg">${escHtml(q.message)}</div>
+      ${q.replied && q.reply ? `
+        <div class="q-item-reply">
+          <div class="q-item-reply-label">The Residence</div>
+          ${escHtml(q.reply)}
+        </div>` : ''}
+      <div class="q-item-time">${new Date(q.created_at).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'})}</div>
+    </div>
+  `).join('');
+}
+
+async function submitQuestion() {
+  const name = document.getElementById('qName').value.trim();
+  const email = document.getElementById('qEmail').value.trim();
+  const msg = document.getElementById('qMsg').value.trim();
+  if (!name || !msg) { alert('Please enter your name and question.'); return; }
+
+  const btn = document.querySelector('.q-submit');
+  btn.textContent = 'Posting...';
+  btn.disabled = true;
+
+  const { error } = await sb.from('questions').insert({ visitor_name: name, visitor_email: email || null, message: msg });
+
+  btn.textContent = 'Post Question';
+  btn.disabled = false;
+
+  if (!error) {
+    document.getElementById('qName').value = '';
+    document.getElementById('qEmail').value = '';
+    document.getElementById('qMsg').value = '';
+    document.getElementById('qSuccess').style.display = 'block';
+    setTimeout(() => document.getElementById('qSuccess').style.display = 'none', 4000);
+    loadQuestions();
+  } else {
+    alert('Could not post question. Please try again.');
+  }
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Init
+loadFlats();
+loadQuestions();
+</script>
+</body>
+</html>
