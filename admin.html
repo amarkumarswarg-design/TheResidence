@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin — The Residence</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;--border:#262626;--border2:#333;--gold:#c9a84c;--text:#f0f0f0;--muted:#888;--muted2:#555;--green:#22c55e;--red:#ef4444;}
+html{scroll-behavior:smooth;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+button,input,textarea,select{font-family:'Outfit',sans-serif;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:360px;}
+.login-logo{font-size:1.5rem;font-weight:700;color:var(--gold);text-align:center;margin-bottom:.3rem;}
+.login-sub{font-size:.78rem;color:var(--muted);text-align:center;margin-bottom:2rem;letter-spacing:.05em;text-transform:uppercase;}
+.lf{margin-bottom:1rem;}
+.lf label{display:block;font-size:.72rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;}
+.lf input{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:.8rem 1rem;color:var(--text);font-size:.9rem;outline:none;transition:border-color .2s;}
+.lf input:focus{border-color:var(--gold);}
+.login-btn{width:100%;background:var(--gold);color:#0a0a0a;border:none;padding:.9rem;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:.5rem;}
+.login-err{color:var(--red);font-size:.8rem;text-align:center;margin-top:.8rem;display:none;}
+.app{display:none;min-height:100vh;flex-direction:column;}
+.app.show{display:flex;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.85rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-logo{font-size:1rem;font-weight:700;color:var(--gold);}
+.topbar-badge{font-size:.65rem;background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3);padding:.2rem .6rem;border-radius:999px;letter-spacing:.1em;text-transform:uppercase;margin-left:.6rem;}
+.logout-btn{background:transparent;border:1px solid var(--border2);color:var(--muted);padding:.4rem .9rem;border-radius:6px;cursor:pointer;font-size:.78rem;}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
+.tabs{background:var(--surface);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;padding:0 1rem;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab-btn{padding:.8rem 1.2rem;font-size:.82rem;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent;transition:.2s;}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.content{flex:1;padding:1.5rem;max-width:960px;margin:0 auto;width:100%;}
+.page-header{margin-bottom:1.5rem;}
+.page-title{font-size:1.2rem;font-weight:600;margin-bottom:.2rem;}
+.page-sub{font-size:.8rem;color:var(--muted);}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;}
+@media(max-width:480px){.stats-row{grid-template-columns:1fr 1fr;}}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem;}
+.stat-label{font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.3rem;}
+.stat-val{font-size:1.5rem;font-weight:700;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:1.2rem;overflow:hidden;}
+.card-header{padding:1.2rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.card-title{font-size:.95rem;font-weight:600;}
+.card-body{padding:1.5rem;}
+.badge{font-size:.65rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:.22rem .65rem;border-radius:999px;}
+.badge-green{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.badge-gold{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3);}
+.toggle-wrap{display:flex;align-items:center;gap:.75rem;}
+.toggle-label{font-size:.8rem;color:var(--muted);}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-track{position:absolute;inset:0;background:var(--border2);border-radius:999px;transition:.3s;}
+.toggle-track::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:var(--muted);border-radius:50%;transition:.3s;}
+.toggle input:checked~.toggle-track{background:var(--green);}
+.toggle input:checked~.toggle-track::before{transform:translateX(20px);background:#fff;}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:520px){.fg{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:.4rem;}
+.field.full{grid-column:1/-1;}
+.field label{font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+.field input,.field textarea,.field select{background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:.75rem 1rem;color:var(--text);font-size:.88rem;outline:none;transition:border-color .2s;width:100%;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold);}
+.field textarea{min-height:80px;resize:vertical;}
+.btn{padding:.65rem 1.3rem;border-radius:7px;border:none;cursor:pointer;font-size:.82rem;font-weight:600;transition:.2s;display:inline-flex;align-items:center;gap:.4rem;}
+.btn:active{transform:scale(.98);}
+.btn-gold{background:var(--gold);color:#0a0a0a;}
+.btn-gold:hover{opacity:.9;}
+.btn-surface{background:var(--surface2);color:var(--text);border:1px solid var(--border2);}
+.btn-surface:hover{background:var(--border);}
+.btn-red{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.btn-red:hover{background:rgba(239,68,68,.2);}
+.btn-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+.btn-green:hover{background:rgba(34,197,94,.2);}
+.btn-sm{padding:.45rem .9rem;font-size:.75rem;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.save-row{display:flex;align-items:center;gap:.75rem;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--border);flex-wrap:wrap;}
+.save-msg{font-size:.78rem;color:var(--green);display:none;}
+.flat-name-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;}
+.flat-name-display{font-size:1rem;font-weight:600;color:var(--gold);}
+.flat-name-input{background:var(--bg);border:1px solid var(--gold);border-radius:6px;padding:.35rem .75rem;color:var(--gold);font-size:.95rem;font-weight:600;outline:none;width:160px;}
+.photos-grid{display:flex;flex-wrap:wrap;gap:.75rem;margin:.75rem 0;}
+.photo-thumb{position:relative;width:90px;height:72px;border-radius:8px;overflow:hidden;border:1px solid var(--border2);}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;}
+.photo-del{position:absolute;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;opacity:0;transition:.2s;cursor:pointer;border:none;color:#fff;font-size:.72rem;font-weight:600;}
+.photo-thumb:hover .photo-del{opacity:1;}
+.upload-zone{border:2px dashed var(--border2);border-radius:8px;padding:1.2rem;text-align:center;cursor:pointer;transition:.2s;margin-top:.5rem;}
+.upload-zone:hover{border-color:var(--gold);background:rgba(201,168,76,.03);}
+.upload-zone p{font-size:.8rem;color:var(--muted);pointer-events:none;}
+.upload-zone input{display:none;}
+.uprog{font-size:.75rem;color:var(--gold);margin-top:.4rem;display:none;}
+.cover-prev{width:100%;max-height:140px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);margin-bottom:.75rem;display:none;}
+.cover-prev.show{display:block;}
+.q-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.2rem;margin-bottom:.9rem;}
+.q-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:.6rem;flex-wrap:wrap;}
+.q-name{font-weight:600;font-size:.9rem;}
+.q-contact{font-size:.75rem;color:var(--muted);}
+.q-time{font-size:.7rem;color:var(--muted2);margin-top:.1rem;}
+.q-msg{font-size:.88rem;color:#ccc;line-height:1.7;background:var(--bg);padding:.8rem 1rem;border-radius:7px;margin-bottom:.8rem;border-left:3px solid var(--border2);}
+.q-replied-box{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:7px;padding:.75rem 1rem;margin-bottom:.8rem;}
+.q-replied-label{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:.3rem;}
+.q-replied-text{font-size:.85rem;color:#a0e0b0;line-height:1.6;}
+.q-reply-area{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;padding:.75rem 1rem;color:var(--text);font-size:.85rem;min-height:80px;resize:vertical;outline:none;transition:border-color .2s;margin-bottom:.75rem;}
+.q-reply-area:focus{border-color:var(--gold);}
+.q-actions{display:flex;gap:.6rem;flex-wrap:wrap;}
+.sec-title{font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem;padding-bottom:.4rem;border-top:1px solid var(--border);padding-top:1.2rem;margin-top:1.2rem;}
+.sec-title:first-child{border-top:none;padding-top:0;margin-top:0;}
+.empty{text-align:center;padding:3rem;color:var(--muted);font-size:.85rem;}
+.loading{text-align:center;padding:2rem;color:var(--muted);font-size:.85rem;}
+.spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite;margin:0 auto .5rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);color:var(--text);padding:.7rem 1.5rem;border-radius:999px;font-size:.82rem;border:1px solid var(--border2);z-index:9999;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.success{border-color:rgba(34,197,94,.4);color:var(--green);}
+.toast.error{border-color:rgba(239,68,68,.4);color:var(--red);}
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s;backdrop-filter:blur(4px);}
+.confirm-overlay.show{opacity:1;pointer-events:all;}
+.confirm-box{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:2rem;max-width:320px;width:100%;text-align:center;}
+.confirm-title{font-size:1rem;font-weight:600;margin-bottom:.5rem;}
+.confirm-msg{font-size:.84rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6;}
+.confirm-actions{display:flex;gap:.75rem;justify-content:center;}
+.info-box{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.9rem 1.1rem;font-size:.8rem;color:var(--gold);margin-bottom:1rem;line-height:1.6;}
+.renter-box{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:1rem;margin-top:.75rem;}
+.renter-box-label{font-size:.7rem;color:var(--red);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <div class="login-logo">The Residence</div>
+    <div class="login-sub">Admin Panel</div>
+    <div class="lf"><label>Username</label><input type="text" id="loginUser" autocomplete="off"/></div>
+    <div class="lf"><label>Password</label><input type="password" id="loginPass" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <button class="login-btn" onclick="doLogin()">Login →</button>
+    <div class="login-err" id="loginErr">Wrong username or password.</div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;">
+      <span class="topbar-logo">The Residence</span>
+      <span class="topbar-badge">Admin</span>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('flats',this)">🏠 Flats</button>
+    <button class="tab-btn" onclick="switchTab('questions',this)">💬 Questions</button>
+    <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ Content</button>
+    <button class="tab-btn" onclick="switchTab('loginset',this)">🔐 Login</button>
+  </div>
+  <div class="content">
+
+    <!-- FLATS -->
+    <div id="tab-flats">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Total</div><div class="stat-val" style="color:var(--gold)" id="statTotal">—</div></div>
+        <div class="stat-card"><div class="stat-label">Available</div><div class="stat-val" style="color:var(--green)" id="statAvail">—</div></div>
+        <div class="stat-card"><div class="stat-label">Rented</div><div class="stat-val" style="color:var(--red)" id="statRented">—</div></div>
+      </div>
+      <div class="page-header">
+        <div class="page-title">Manage Flats</div>
+        <div class="page-sub">Edit name, price, availability, renter name, cover photo, gallery</div>
+      </div>
+      <div id="flatsContainer"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+    </div>
+
+    <!-- QUESTIONS -->
+    <div id="tab-questions" style="display:none;">
+      <div class="page-header">
+        <div class="page-title">Visitor Questions</div>
+        <div class="page-sub">Reply or delete visitor questions</div>
+      </div>
+      <div id="questionsContainer"><div class="loading"><div class="spinner"></div>Loading...</div></div>
+    </div>
+
+    <!-- CONTENT SETTINGS -->
+    <div id="tab-settings" style="display:none;">
+      <div class="page-header">
+        <div class="page-title">Website Content</div>
+        <div class="page-sub">Edit every word on the website — saves live instantly</div>
+      </div>
+      <div class="info-box">💡 English is the primary language. Hindi fields are translations. Leave a field empty to use the default text.</div>
+
+      <!-- COVER PHOTO -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">🖼️ Hero Cover Photo</div></div>
+        <div class="card-body">
+          <img id="coverPreview" class="cover-prev" src="" alt="Cover"/>
+          <div class="upload-zone" onclick="document.getElementById('coverUpload').click()">
+            <p>📷 Click to upload hero cover photo</p>
+            <input type="file" id="coverUpload" accept="image/*" onchange="uploadCoverPhoto(this)"/>
+            <div class="uprog" id="coverProg">Uploading...</div>
+          </div>
+          <div style="margin-top:.75rem;">
+            <div class="field"><label>Or paste image URL</label><input type="text" id="set-cover-url" placeholder="https://..."/></div>
+            <div class="save-row"><button class="btn btn-gold" onclick="saveCoverUrl()">Set Cover Photo</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HERO -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">🏆 Hero Section</div></div>
+        <div class="card-body">
+          <div class="sec-title">Browser Tab Title</div>
+          <div class="field full"><input type="text" id="set-site-title" placeholder="The Residence — Arrah"/></div>
+          <div class="sec-title">Main Heading</div>
+          <div class="fg">
+            <div class="field"><label>English</label><input type="text" id="set-hero-title" placeholder="The &lt;em&gt;Residence&lt;/em&gt;"/></div>
+            <div class="field"><label>Hindi</label><input type="text" id="set-hero-title-hi" placeholder="द रेज़िडेन्स"/></div>
+          </div>
+          <div class="sec-title">Top Small Line (Eyebrow)</div>
+          <div class="fg">
+            <div class="field"><label>English</label><input type="text" id="set-hero-eyebrow" placeholder="Premium Residential Rentals — Arrah"/></div>
+            <div class="field"><label>Hindi</label><input type="text" id="set-hero-eyebrow-hi" placeholder="प्रीमियम आवासीय किराया — आरा"/></div>
+          </div>
+          <div class="sec-title">Tagline</div>
+          <div class="fg">
+            <div class="field"><label>English</label><textarea id="set-hero-sub" placeholder="Three well-maintained flats..."></textarea></div>
+            <div class="field"><label>Hindi</label><textarea id="set-hero-sub-hi" placeholder="तीन सुव्यवस्थित फ्लैट..."></textarea></div>
+          </div>
+          <div class="sec-title">Buttons</div>
+          <div class="fg">
+            <div class="field"><label>Button 1 (EN)</label><input type="text" id="set-hero-btn1" placeholder="View Available Flats"/></div>
+            <div class="field"><label>Button 1 (HI)</label><input type="text" id="set-hero-btn1-hi" placeholder="उपलब्ध फ्लैट देखें"/></div>
+            <div class="field"><label>Button 2 (EN)</label><input type="text" id="set-hero-btn2" placeholder="Ask a Question"/></div>
+            <div class="field"><label>Button 2 (HI)</label><input type="text" id="set-hero-btn2-hi" placeholder="सवाल पूछें"/></div>
+          </div>
+          <div class="save-row"><button class="btn btn-gold" onclick="saveSection('hero')">Save Hero</button><span class="save-msg" id="saved-hero">✓ Saved!</span></div>
+        </div>
+      </div>
+
+      <!-- FLATS SECTION -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">🏠 Flats Section Text</div></div>
+        <div class="card-body">
+          <div class="fg">
+            <div class="field"><label>Label (EN)</label><input type="text" id="set-flats-label" placeholder="Available Now"/></div>
+            <div class="field"><label>Label (HI)</label><input type="text" id="set-flats-label-hi" placeholder="अभी उपलब्ध"/></div>
+            <div class="field"><label>Heading (EN)</label><input type="text" id="set-flats-heading" placeholder="Choose Your Home"/></div>
+            <div class="field"><label>Heading (HI)</label><input type="text" id="set-flats-heading-hi" placeholder="अपना घर चुनें"/></div>
+            <div class="field full"><label>Subtext (EN)</label><input type="text" id="set-flats-sub" placeholder="Three flats, directly from owner..."/></div>
+            <div class="field full"><label>Subtext (HI)</label><input type="text" id="set-flats-sub-hi" placeholder="तीन फ्लैट, सीधे मालिक से..."/></div>
+          </div>
+          <div class="save-row"><button class="btn btn-gold" onclick="saveSection('flats')">Save</button><span class="save-msg" id="saved-flats">✓ Saved!</span></div>
+        </div>
+      </div>
+
+      <!-- Q&A -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">💬 Q&A Section Text</div></div>
+        <div class="card-body">
+          <div class="fg">
+            <div class="field"><label>Label (EN)</label><input type="text" id="set-qa-label" placeholder="Community Q&A"/></div>
+            <div class="field"><label>Label (HI)</label><input type="text" id="set-qa-label-hi" placeholder="सवाल-जवाब"/></div>
+            <div class="field"><label>Heading (EN)</label><input type="text" id="set-qa-heading" placeholder="Have a Question?"/></div>
+            <div class="field"><label>Heading (HI)</label><input type="text" id="set-qa-heading-hi" placeholder="कोई सवाल है?"/></div>
+            <div class="field full"><label>Subtext (EN)</label><input type="text" id="set-qa-sub" placeholder="Ask anything..."/></div>
+            <div class="field full"><label>Subtext (HI)</label><input type="text" id="set-qa-sub-hi" placeholder="कुछ भी पूछें..."/></div>
+          </div>
+          <div class="save-row"><button class="btn btn-gold" onclick="saveSection('qa')">Save</button><span class="save-msg" id="saved-qa">✓ Saved!</span></div>
+        </div>
+      </div>
+
+      <!-- LOCATION -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">📍 Location Section</div></div>
+        <div class="card-body">
+          <div class="fg">
+            <div class="field"><label>Label (EN)</label><input type="text" id="set-loc-label" placeholder="Location"/></div>
+            <div class="field"><label>Label (HI)</label><input type="text" id="set-loc-label-hi" placeholder="स्थान"/></div>
+            <div class="field"><label>Heading (EN)</label><input type="text" id="set-loc-heading" placeholder="Babu Bazar, Arrah"/></div>
+            <div class="field"><label>Heading (HI)</label><input type="text" id="set-loc-heading-hi" placeholder="बाबू बाजार, आरा"/></div>
+            <div class="field full"><label>Description (EN)</label><input type="text" id="set-loc-sub" placeholder="Centrally located..."/></div>
+            <div class="field full"><label>Description (HI)</label><input type="text" id="set-loc-sub-hi" placeholder="शहर के बीच में..."/></div>
+            <div class="field full"><label>Location Chips — one per line (with emoji)</label><textarea id="set-loc-chips" rows="5" placeholder="🛍️ Near Zudio Mall&#10;🏥 Opp. Sahabad Pathology&#10;🏪 Babu Bazar Market&#10;🚌 Well Connected"></textarea></div>
+          </div>
+          <div class="save-row"><button class="btn btn-gold" onclick="saveSection('loc')">Save</button><span class="save-msg" id="saved-loc">✓ Saved!</span></div>
+        </div>
+      </div>
+
+      <!-- CONTACT -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">✉️ Contact Section</div></div>
+        <div class="card-body">
+          <div class="info-box">Mail button always sends to Amar@hiamar.online — this is fixed.</div>
+          <div class="fg">
+            <div class="field"><label>Label (EN)</label><input type="text" id="set-contact-label" placeholder="Get in Touch"/></div>
+            <div class="field"><label>Label (HI)</label><input type="text" id="set-contact-label-hi" placeholder="संपर्क करें"/></div>
+            <div class="field"><label>Heading (EN)</label><input type="text" id="set-contact-heading" placeholder="Interested? Mail Us."/></div>
+            <div class="field"><label>Heading (HI)</label><input type="text" id="set-contact-heading-hi" placeholder="रुचि है? मेल करें।"/></div>
+            <div class="field full"><label>Subtext (EN)</label><input type="text" id="set-contact-sub" placeholder="No brokers. Direct conversation with the owner."/></div>
+            <div class="field full"><label>Subtext (HI)</label><input type="text" id="set-contact-sub-hi" placeholder="कोई दलाल नहीं।"/></div>
+            <div class="field full"><label>Note below button (EN)</label><input type="text" id="set-contact-note" placeholder="Direct from Owner — No Broker"/></div>
+          </div>
+          <div class="save-row"><button class="btn btn-gold" onclick="saveSection('contact')">Save</button><span class="save-msg" id="saved-contact">✓ Saved!</span></div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">📄 Footer</div></div>
+        <div class="card-body">
+          <div class="fg">
+            <div class="field"><label>Property Name</label><input type="text" id="set-footer-name" placeholder="The Residence"/></div>
+            <div class="field"><label>Note (EN)</label><input type="text" id="set-footer-note" placeholder="Direct from Owner"/></div>
+            <div class="field"><label>Location (EN)</label><input type="text" id="set-footer-location" placeholder="Babu Bazar, Arrah, Bihar"/></div>
+            <div class="field"><label>Location (HI)</label><input type="text" id="set-footer-location-hi" placeholder="बाबू बाजार, आरा, बिहार"/></div>
+          </div>
+          <div class="save-row"><button class="btn btn-gold" onclick="saveSection('footer')">Save</button><span class="save-msg" id="saved-footer">✓ Saved!</span></div>
+        </div>
+      </div>
+
+      <!-- RULES -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">📋 Rules & Conditions</div></div>
+        <div class="card-body">
+          <div class="field full">
+            <label>Rules — one per line</label>
+            <textarea id="set-rules" rows="7" placeholder="Families only — No bachelors&#10;No pets allowed&#10;No broker — direct from owner&#10;Rent payable by 5th of every month"></textarea>
+          </div>
+          <div class="save-row"><button class="btn btn-gold" onclick="saveSection('rules')">Save Rules</button><span class="save-msg" id="saved-rules">✓ Saved!</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGIN SETTINGS -->
+    <div id="tab-loginset" style="display:none;">
+      <div class="page-header"><div class="page-title">Change Login Credentials</div></div>
+      <div class="card">
+        <div class="card-body">
+          <div class="fg">
+            <div class="field"><label>New Username</label><input type="text" id="new-user"/></div>
+            <div class="field"><label>New Password</label><input type="password" id="new-pass"/></div>
+          </div>
+          <div class="save-row">
+            <button class="btn btn-gold" onclick="changePassword()">Update Login</button>
+            <span class="save-msg" id="pass-saved">✓ Updated! Note it down.</span>
+          </div>
+          <p style="font-size:.75rem;color:var(--muted);margin-top:.75rem;">⚠️ After changing, logout and login with new credentials.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-msg" id="confirmMsg">This cannot be undone.</div>
+    <div class="confirm-actions">
+      <button class="btn btn-surface" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-red" id="confirmOk">Delete</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://spadxbjghduuqntsimic.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwYWR4YmpnaGR1dXFudHNpbWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDMzNDksImV4cCI6MjA5MzkxOTM0OX0.LE9yJGEPIERR6ZW_nRfXsvUW0nIuQCezCBSzesOex-c';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+/* AUTH */
+function getCreds(){try{const r=localStorage.getItem('tr_creds');if(r)return JSON.parse(r);}catch(e){}return{user:'TheResidence',pass:'AmarSwarg2010'};}
+function saveCreds(u,p){localStorage.setItem('tr_creds',JSON.stringify({user:u,pass:p}));}
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value.trim();
+  const c=getCreds();
+  if(u===c.user&&p===c.pass){sessionStorage.setItem('tr_auth','1');showApp();}
+  else{document.getElementById('loginErr').style.display='block';}
+}
+function doLogout(){sessionStorage.removeItem('tr_auth');document.getElementById('app').classList.remove('show');document.getElementById('loginWrap').style.display='flex';}
+function showApp(){document.getElementById('loginWrap').style.display='none';document.getElementById('app').classList.add('show');loadFlats();loadQuestions();loadSettingsAdmin();}
+if(sessionStorage.getItem('tr_auth')==='1')showApp();
+
+function switchTab(name,btn){
+  ['flats','questions','settings','loginset'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.style.display=t===name?'block':'none';});
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+let toastTimer;
+function toast(msg,type=''){
+  const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.className='toast',2500);
+}
+function confirm2(title,msg,cb){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  document.getElementById('confirmOk').onclick=()=>{closeConfirm();cb();};
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+function closeConfirm(){document.getElementById('confirmOverlay').classList.remove('show');}
+
+/* SETTINGS */
+let CS={};
+async function loadSettingsAdmin(){
+  try{
+    const{data,error}=await sb.from('settings').select('*');
+    if(error)throw error;
+    if(data&&data.length){data.forEach(row=>{try{const v=JSON.parse(row.value);if(row.key==='site')CS=v;}catch(e){}});}
+    fillForm(CS);
+  }catch(e){toast('Settings load error','error');}
+}
+function fillForm(s){
+  const set=(id,val)=>{const el=document.getElementById(id);if(el&&val!=null)el.value=val;};
+  set('set-site-title',s.site_title);
+  set('set-hero-title',s.hero_title);set('set-hero-title-hi',s.hero_title_hi);
+  set('set-hero-eyebrow',s.hero_eyebrow);set('set-hero-eyebrow-hi',s.hero_eyebrow_hi);
+  set('set-hero-sub',s.hero_sub);set('set-hero-sub-hi',s.hero_sub_hi);
+  set('set-hero-btn1',s.hero_btn1);set('set-hero-btn1-hi',s.hero_btn1_hi);
+  set('set-hero-btn2',s.hero_btn2);set('set-hero-btn2-hi',s.hero_btn2_hi);
+  set('set-cover-url',s.hero_cover);
+  if(s.hero_cover){const p=document.getElementById('coverPreview');p.src=s.hero_cover;p.classList.add('show');}
+  set('set-flats-label',s.flats_label);set('set-flats-label-hi',s.flats_label_hi);
+  set('set-flats-heading',s.flats_heading);set('set-flats-heading-hi',s.flats_heading_hi);
+  set('set-flats-sub',s.flats_sub);set('set-flats-sub-hi',s.flats_sub_hi);
+  set('set-qa-label',s.qa_label);set('set-qa-label-hi',s.qa_label_hi);
+  set('set-qa-heading',s.qa_heading);set('set-qa-heading-hi',s.qa_heading_hi);
+  set('set-qa-sub',s.qa_sub);set('set-qa-sub-hi',s.qa_sub_hi);
+  set('set-loc-label',s.loc_label);set('set-loc-label-hi',s.loc_label_hi);
+  set('set-loc-heading',s.loc_heading);set('set-loc-heading-hi',s.loc_heading_hi);
+  set('set-loc-sub',s.loc_sub);set('set-loc-sub-hi',s.loc_sub_hi);
+  if(s.loc_chips)set('set-loc-chips',Array.isArray(s.loc_chips)?s.loc_chips.join('\n'):s.loc_chips);
+  set('set-contact-label',s.contact_label);set('set-contact-label-hi',s.contact_label_hi);
+  set('set-contact-heading',s.contact_heading);set('set-contact-heading-hi',s.contact_heading_hi);
+  set('set-contact-sub',s.contact_sub);set('set-contact-sub-hi',s.contact_sub_hi);
+  set('set-contact-note',s.contact_note);
+  set('set-footer-name',s.footer_name);set('set-footer-note',s.footer_note);
+  set('set-footer-location',s.footer_location);set('set-footer-location-hi',s.footer_location_hi);
+  set('set-rules',s.rules);
+}
+function gv(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+async function saveSection(section){
+  let u={...CS};
+  if(section==='hero'){u.site_title=gv('set-site-title');u.hero_title=gv('set-hero-title');u.hero_title_hi=gv('set-hero-title-hi');u.hero_eyebrow=gv('set-hero-eyebrow');u.hero_eyebrow_hi=gv('set-hero-eyebrow-hi');u.hero_sub=gv('set-hero-sub');u.hero_sub_hi=gv('set-hero-sub-hi');u.hero_btn1=gv('set-hero-btn1');u.hero_btn1_hi=gv('set-hero-btn1-hi');u.hero_btn2=gv('set-hero-btn2');u.hero_btn2_hi=gv('set-hero-btn2-hi');}
+  if(section==='flats'){u.flats_label=gv('set-flats-label');u.flats_label_hi=gv('set-flats-label-hi');u.flats_heading=gv('set-flats-heading');u.flats_heading_hi=gv('set-flats-heading-hi');u.flats_sub=gv('set-flats-sub');u.flats_sub_hi=gv('set-flats-sub-hi');}
+  if(section==='qa'){u.qa_label=gv('set-qa-label');u.qa_label_hi=gv('set-qa-label-hi');u.qa_heading=gv('set-qa-heading');u.qa_heading_hi=gv('set-qa-heading-hi');u.qa_sub=gv('set-qa-sub');u.qa_sub_hi=gv('set-qa-sub-hi');}
+  if(section==='loc'){u.loc_label=gv('set-loc-label');u.loc_label_hi=gv('set-loc-label-hi');u.loc_heading=gv('set-loc-heading');u.loc_heading_hi=gv('set-loc-heading-hi');u.loc_sub=gv('set-loc-sub');u.loc_sub_hi=gv('set-loc-sub-hi');const chips=gv('set-loc-chips');u.loc_chips=chips?chips.split('\n').filter(c=>c.trim()):[];}
+  if(section==='contact'){u.contact_label=gv('set-contact-label');u.contact_label_hi=gv('set-contact-label-hi');u.contact_heading=gv('set-contact-heading');u.contact_heading_hi=gv('set-contact-heading-hi');u.contact_sub=gv('set-contact-sub');u.contact_sub_hi=gv('set-contact-sub-hi');u.contact_note=gv('set-contact-note');}
+  if(section==='footer'){u.footer_name=gv('set-footer-name');u.footer_note=gv('set-footer-note');u.footer_location=gv('set-footer-location');u.footer_location_hi=gv('set-footer-location-hi');}
+  if(section==='rules'){u.rules=gv('set-rules');}
+  await saveToDB(u,section);
+}
+async function saveCoverUrl(){
+  const url=gv('set-cover-url');if(!url){toast('Enter URL first','error');return;}
+  const u={...CS,hero_cover:url};await saveToDB(u,'cover');
+  const p=document.getElementById('coverPreview');p.src=url;p.classList.add('show');
+}
+async function uploadCoverPhoto(input){
+  const file=input.files[0];if(!file)return;
+  const prog=document.getElementById('coverProg');prog.style.display='block';prog.textContent='Uploading...';
+  const ext=file.name.split('.').pop();const path=`cover/hero-${Date.now()}.${ext}`;
+  const{error}=await sb.storage.from('flat-photos').upload(path,file,{upsert:true});
+  if(error){prog.style.display='none';toast('Upload failed','error');return;}
+  const{data:ud}=sb.storage.from('flat-photos').getPublicUrl(path);
+  const url=ud.publicUrl;prog.style.display='none';
+  document.getElementById('set-cover-url').value=url;
+  const p=document.getElementById('coverPreview');p.src=url;p.classList.add('show');
+  await saveToDB({...CS,hero_cover:url},'cover');input.value='';
+}
+async function saveToDB(updates,section){
+  CS=updates;
+  try{
+    const{error}=await sb.from('settings').upsert({key:'site',value:JSON.stringify(updates)},{onConflict:'key'});
+    if(error)throw error;
+    const el=document.getElementById('saved-'+section);
+    if(el){el.style.display='inline';setTimeout(()=>el.style.display='none',2500);}
+    toast('Saved! ✓','success');
+  }catch(e){toast('Save error: '+e.message,'error');console.error(e);}
+}
+
+/* FLATS */
+let allPhotos={};let flatData=[];
+async function loadFlats(){
+  const{data:flats}=await sb.from('flats').select('*').order('id');
+  const{data:photos}=await sb.from('photos').select('*');
+  allPhotos={};
+  (photos||[]).forEach(p=>{if(!allPhotos[p.flat_id])allPhotos[p.flat_id]=[];allPhotos[p.flat_id].push(p);});
+  flatData=flats||[];
+  updateStats(flatData);
+  document.getElementById('flatsContainer').innerHTML=flatData.map(f=>renderFlat(f)).join('');
+}
+function updateStats(flats){
+  document.getElementById('statTotal').textContent=flats.length;
+  document.getElementById('statAvail').textContent=flats.filter(f=>f.available).length;
+  document.getElementById('statRented').textContent=flats.filter(f=>!f.available).length;
+}
+function renderFlat(f){
+  const photos=allPhotos[f.id]||[];
+  const hasCover=f.cover_photo;
+  const showRenter=!f.available;
+  return`<div class="card" id="flatcard-${f.id}">
+  <div class="card-header">
+    <div class="card-title">
+      <div class="flat-name-row">
+        <span class="flat-name-display" id="fname-disp-${f.id}">${esc(f.name)}</span>
+        <input class="flat-name-input" id="fname-inp-${f.id}" value="${esc(f.name)}" style="display:none" onblur="saveFlatName('${f.id}')"/>
+        <button class="btn btn-surface btn-sm" onclick="editFlatName('${f.id}')">✏️ Rename</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <span class="badge ${f.available?'badge-green':'badge-red'}" id="avbadge-${f.id}">${f.available?'✓ Available':'✗ Rented'}</span>
+      <div class="toggle-wrap">
+        <span class="toggle-label" id="avlabel-${f.id}">${f.available?'Available':'Rented'}</span>
+        <label class="toggle">
+          <input type="checkbox" ${f.available?'checked':''} onchange="toggleAvail('${f.id}',this.checked)"/>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="fg">
+      <div class="field"><label>Monthly Rent (₹)</label><input type="number" id="${f.id}-price" value="${f.price}"/></div>
+      <div class="field"><label>Security Deposit (₹)</label><input type="number" id="${f.id}-deposit" value="${f.deposit}"/></div>
+      <div class="field"><label>Floor</label><input type="text" id="${f.id}-floor" value="${esc(f.floor)}"/></div>
+      <div class="field"><label>Facing Direction</label><input type="text" id="${f.id}-facing" value="${esc(f.facing)}"/></div>
+      <div class="field"><label>Room Description</label><input type="text" id="${f.id}-rooms" value="${esc(f.rooms)}"/></div>
+      <div class="field"><label>Furnishing</label>
+        <select id="${f.id}-furnishing">
+          <option ${f.furnishing==='Unfurnished'?'selected':''}>Unfurnished</option>
+          <option ${f.furnishing==='Semi-Furnished'?'selected':''}>Semi-Furnished</option>
+          <option ${f.furnishing==='Fully Furnished'?'selected':''}>Fully Furnished</option>
+        </select>
+      </div>
+      <div class="field full"><label>Additional Notes (shown to visitors)</label><textarea id="${f.id}-notes">${esc(f.extra_notes||'')}</textarea></div>
+    </div>
+
+    <!-- RENTER NAME BOX -->
+    <div class="renter-box" id="renter-box-${f.id}" style="${f.available?'display:none':''}">
+      <div class="renter-box-label">👤 Renter Name — shown on card when not available</div>
+      <div class="field full" style="margin-top:.4rem;">
+        <input type="text" id="${f.id}-renter" value="${esc(f.renter_name||'')}" placeholder="e.g. Sharma Family"/>
+      </div>
+    </div>
+
+    <div class="save-row">
+      <button class="btn btn-gold" onclick="saveFlat('${f.id}',this)">Save Changes</button>
+      <span class="save-msg" id="saved-${f.id}">✓ Saved!</span>
+    </div>
+
+    <!-- COVER PHOTO -->
+    <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+      <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;">Cover Photo (shown on flat card)</div>
+      ${hasCover?`<img src="${f.cover_photo}" class="cover-prev show" id="fcover-prev-${f.id}" alt=""/>`:`<div id="fcover-prev-${f.id}"></div>`}
+      <div class="upload-zone" onclick="document.getElementById('fcover-${f.id}').click()">
+        <p>📷 Upload flat cover photo</p>
+        <input type="file" id="fcover-${f.id}" accept="image/*" onchange="uploadFlatCover('${f.id}',this)"/>
+        <div class="uprog" id="fcover-prog-${f.id}">Uploading...</div>
+      </div>
+      ${hasCover?`<button class="btn btn-red btn-sm" style="margin-top:.5rem;" onclick="removeFlatCover('${f.id}')">🗑 Remove Cover</button>`:''}
+    </div>
+
+    <!-- GALLERY -->
+    <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+      <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem;">Gallery Photos (shown on detail page)</div>
+      <div class="photos-grid" id="photos-${f.id}">
+        ${photos.map(p=>`<div class="photo-thumb" id="pthumb-${p.id}"><img src="${p.url}" alt=""/><button class="photo-del" onclick="deletePhoto('${p.id}','${f.id}')">🗑</button></div>`).join('')}
+      </div>
+      <div class="upload-zone" onclick="document.getElementById('upload-${f.id}').click()">
+        <p>📷 Upload gallery photos (multiple)</p>
+        <input type="file" id="upload-${f.id}" accept="image/*" multiple onchange="uploadPhotos('${f.id}',this)"/>
+        <div class="uprog" id="uprog-${f.id}">Uploading...</div>
+      </div>
+    </div>
+  </div></div>`;
+}
+
+function editFlatName(id){
+  document.getElementById('fname-disp-'+id).style.display='none';
+  const i=document.getElementById('fname-inp-'+id);i.style.display='inline-block';i.focus();i.select();
+}
+async function saveFlatName(id){
+  const i=document.getElementById('fname-inp-'+id);const n=i.value.trim();if(!n)return;
+  document.getElementById('fname-disp-'+id).textContent=n;
+  document.getElementById('fname-disp-'+id).style.display='';i.style.display='none';
+  const{error}=await sb.from('flats').update({name:n}).eq('id',id);
+  if(!error)toast('Renamed!','success');else toast('Error.','error');
+}
+async function saveFlat(id,btn){
+  btn.disabled=true;btn.textContent='Saving...';
+  const u={
+    price:parseInt(document.getElementById(id+'-price').value)||0,
+    deposit:parseInt(document.getElementById(id+'-deposit').value)||0,
+    floor:document.getElementById(id+'-floor').value.trim(),
+    facing:document.getElementById(id+'-facing').value.trim(),
+    rooms:document.getElementById(id+'-rooms').value.trim(),
+    furnishing:document.getElementById(id+'-furnishing').value,
+    extra_notes:document.getElementById(id+'-notes').value.trim(),
+    renter_name:document.getElementById(id+'-renter')?.value.trim()||null,
+  };
+  const{error}=await sb.from('flats').update(u).eq('id',id);
+  btn.disabled=false;btn.textContent='Save Changes';
+  if(!error){const s=document.getElementById('saved-'+id);s.style.display='inline';setTimeout(()=>s.style.display='none',2500);toast('Saved!','success');flatData=flatData.map(f=>f.id===id?{...f,...u}:f);updateStats(flatData);}
+  else toast('Error: '+error.message,'error');
+}
+async function toggleAvail(id,val){
+  const{error}=await sb.from('flats').update({available:val}).eq('id',id);
+  if(!error){
+    flatData=flatData.map(f=>f.id===id?{...f,available:val}:f);updateStats(flatData);
+    const b=document.getElementById('avbadge-'+id);const l=document.getElementById('avlabel-'+id);
+    const rbox=document.getElementById('renter-box-'+id);
+    if(b){b.className='badge '+(val?'badge-green':'badge-red');b.textContent=val?'✓ Available':'✗ Rented';}
+    if(l)l.textContent=val?'Available':'Rented';
+    if(rbox)rbox.style.display=val?'none':'block';
+    toast(val?'Marked Available ✓':'Marked as Rented',val?'success':'');
+  }else toast('Error.','error');
+}
+async function uploadFlatCover(flatId,input){
+  const file=input.files[0];if(!file)return;
+  const prog=document.getElementById('fcover-prog-'+flatId);prog.style.display='block';prog.textContent='Uploading...';
+  const ext=file.name.split('.').pop();const path=`covers/${flatId}-${Date.now()}.${ext}`;
+  const{error}=await sb.storage.from('flat-photos').upload(path,file,{upsert:true});
+  if(error){prog.style.display='none';toast('Upload failed: '+error.message,'error');return;}
+  const{data:ud}=sb.storage.from('flat-photos').getPublicUrl(path);
+  const url=ud.publicUrl;prog.style.display='none';input.value='';
+  const{error:e2}=await sb.from('flats').update({cover_photo:url}).eq('id',flatId);
+  if(!e2){
+    flatData=flatData.map(f=>f.id===flatId?{...f,cover_photo:url}:f);
+    const prev=document.getElementById('fcover-prev-'+flatId);
+    if(prev.tagName==='IMG'){prev.src=url;}
+    else{const img=document.createElement('img');img.src=url;img.className='cover-prev show';img.id='fcover-prev-'+flatId;prev.replaceWith(img);}
+    toast('Cover photo set! ✓','success');
+  }else toast('DB error.','error');
+}
+async function removeFlatCover(flatId){
+  confirm2('Remove Cover Photo','Cover photo will be removed.',async()=>{
+    const{error}=await sb.from('flats').update({cover_photo:null}).eq('id',flatId);
+    if(!error){flatData=flatData.map(f=>f.id===flatId?{...f,cover_photo:null}:f);toast('Removed.','success');loadFlats();}
+    else toast('Error.','error');
+  });
+}
+async function uploadPhotos(flatId,input){
+  const files=Array.from(input.files);if(!files.length)return;
+  const prog=document.getElementById('uprog-'+flatId);prog.style.display='block';
+  for(let i=0;i<files.length;i++){
+    prog.textContent=`Uploading ${i+1}/${files.length}...`;
+    const file=files[i];const ext=file.name.split('.').pop();const path=`${flatId}/${Date.now()}-${i}.${ext}`;
+    const{error:upErr}=await sb.storage.from('flat-photos').upload(path,file);
+    if(upErr){toast('Upload failed: '+file.name,'error');continue;}
+    const{data:ud}=sb.storage.from('flat-photos').getPublicUrl(path);
+    const url=ud.publicUrl;
+    const{data:photo}=await sb.from('photos').insert({flat_id:flatId,url}).select().single();
+    if(photo){const g=document.getElementById('photos-'+flatId);const d=document.createElement('div');d.className='photo-thumb';d.id='pthumb-'+photo.id;d.innerHTML=`<img src="${url}" alt=""/><button class="photo-del" onclick="deletePhoto('${photo.id}','${flatId}')">🗑</button>`;g.appendChild(d);}
+  }
+  prog.style.display='none';input.value='';toast(files.length+' photo(s) uploaded!','success');
+}
+async function deletePhoto(photoId,flatId){
+  confirm2('Delete Photo','This photo will be permanently deleted.',async()=>{
+    const{data:photo}=await sb.from('photos').select('url').eq('id',photoId).single();
+    if(photo){const path=photo.url.split('/flat-photos/')[1];if(path)await sb.storage.from('flat-photos').remove([path]);}
+    await sb.from('photos').delete().eq('id',photoId);
+    document.getElementById('pthumb-'+photoId)?.remove();
+    toast('Deleted.','success');
+  });
+}
+
+/* QUESTIONS */
+let questionsData=[];
+async function loadQuestions(){
+  const{data}=await sb.from('questions').select('*').order('created_at',{ascending:false});
+  questionsData=data||[];renderQuestions(questionsData);
+}
+function renderQuestions(qs){
+  const el=document.getElementById('questionsContainer');
+  if(!qs.length){el.innerHTML='<div class="empty">No questions yet.</div>';return;}
+  el.innerHTML=qs.map(q=>`
+  <div class="q-item" id="qitem-${q.id}">
+    <div class="q-top">
+      <div>
+        <div class="q-name">${esc(q.visitor_name)}</div>
+        ${q.visitor_email?`<div class="q-contact">📞 ${esc(q.visitor_email)}</div>`:''}
+        <div class="q-time">${new Date(q.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <span class="badge ${q.replied?'badge-green':'badge-gold'}">${q.replied?'Replied':'Pending'}</span>
+    </div>
+    <div class="q-msg">${esc(q.message)}</div>
+    ${q.replied&&q.reply?`<div class="q-replied-box"><div class="q-replied-label">Your Reply</div><div class="q-replied-text">${esc(q.reply)}</div></div>`:''}
+    <textarea class="q-reply-area" id="reply-${q.id}" placeholder="Write your reply...">${esc(q.reply||'')}</textarea>
+    <div class="q-actions">
+      <button class="btn btn-green btn-sm" onclick="sendReply('${q.id}')">${q.replied?'✏️ Update Reply':'✉️ Post Reply'}</button>
+      <button class="btn btn-red btn-sm" onclick="deleteQuestion('${q.id}')">🗑 Delete</button>
+    </div>
+  </div>`).join('');
+}
+async function sendReply(id){
+  const r=document.getElementById('reply-'+id).value.trim();
+  if(!r){toast('Write a reply first.','error');return;}
+  const{error}=await sb.from('questions').update({reply:r,replied:true}).eq('id',id);
+  if(!error){toast('Reply posted!','success');loadQuestions();}else toast('Error.','error');
+}
+async function deleteQuestion(id){
+  confirm2('Delete Question','This question and reply will be permanently deleted.',async()=>{
+    await sb.from('questions').delete().eq('id',id);
+    document.getElementById('qitem-'+id)?.remove();
+    questionsData=questionsData.filter(q=>q.id!==id);
+    if(!questionsData.length)document.getElementById('questionsContainer').innerHTML='<div class="empty">No questions yet.</div>';
+    toast('Deleted.','success');
+  });
+}
+
+/* LOGIN CHANGE */
+function changePassword(){
+  const u=document.getElementById('new-user').value.trim();const p=document.getElementById('new-pass').value.trim();
+  if(!u||!p){toast('Fill both fields.','error');return;}
+  saveCreds(u,p);
+  const el=document.getElementById('pass-saved');el.style.display='inline';setTimeout(()=>el.style.display='none',3000);
+  toast('Login updated!','success');
+  document.getElementById('new-user').value='';document.getElementById('new-pass').value='';
+}
+
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* Need renter_name column — run this in Supabase SQL if not done:
+   ALTER TABLE flats ADD COLUMN IF NOT EXISTS renter_name TEXT; */
+</script>
+</body>
+</html>
